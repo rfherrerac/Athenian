@@ -9,6 +9,7 @@ library(magrittr)
   
   concept     <-read.delim(file.path(athena_folder,'concept.csv'),as.is=T,quote = "")
   
+  
   #save(concept,file = file.path(athena_folder,'concept.rda'))
        
   vocabulary  <-read.delim(file.path(athena_folder,'vocabulary.csv'),as.is=T,quote = "")

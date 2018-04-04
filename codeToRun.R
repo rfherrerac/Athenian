@@ -152,3 +152,23 @@ search_other <- function(vocabulary=NULL,class=NULL,full_output=FALSE) {
 }
 
 
+search_atc4 <- function(atc4='C07A') {
+  concept %<>% mutate(concept_name=tolower(concept_name))
+  #all atc4 level
+  atc4temp<-concept %>% filter(domain_id=='Drug') %>% filter(concept_class_id=='ATC 4th') %>% select(concept_id)
+  
+  ing<-concept %>% filter(domain_id=='Drug') %>% filter(concept_class_id=='Ingredient') %>% 
+    filter(vocabulary_id=='RxNorm') #remove this condition to do non US ingredients as well
+  
+  
+  ia4map<-concept_ancestor %>% 
+    inner_join(atc4temp,by=c('ancestor_concept_id'='concept_id')) %>% 
+    inner_join(select(ing,concept_id), by=c('descendant_concept_id'='concept_id'))
+  ia4map %<>% left_join(sconcept,by=c('ancestor_concept_id'='concept_id')) %>% 
+    left_join(sconcept,by=c('descendant_concept_id'='concept_id'))
+  ia4map %<>% arrange(concept_code.x)
+  
+  out<-ia4map %>% filter(grepl(atc4,concept_code.x)) %>% arrange(concept_code.x)
+  out
+  
+}
