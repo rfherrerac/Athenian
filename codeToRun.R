@@ -172,3 +172,22 @@ search_atc4 <- function(atc4='C07A') {
   out
   
 }
+
+
+#' See overview of vocabularies
+#'
+#'
+#' @return data frame 
+#' @export
+overview_vocab <- function() {
+  
+  out<-dplyr::count(concept,vocabulary_id)
+  out<-dplyr::arrange(out,desc(n))
+  out
+}
+ 
+overview_class <- function() {
+  out<-dplyr::count(concept,concept$concept_class_id)
+  out<-dplyr::arrange(out,desc(n))
+  out
+} 
