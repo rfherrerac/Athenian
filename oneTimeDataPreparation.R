@@ -24,36 +24,28 @@ library(magrittr)
   
   
   
-  rm(athena_folder)
-  Sys.time()
+  
+  a<-Sys.time()
   save.image(file = file.path(athena_folder,'athena.rda'))
-  Sys.time()
+  print(Sys.time()-a)
+  
+#ignore code below------------
+#make a smaller file without some vocab tables  
+
+  #rm(concept_ancestor)
+  
+  # a<-Sys.time()
+  # save.image(file = file.path(athena_folder,'athena-small.rda'))
+  # print(Sys.time()-a)
   
   
-  library(devtools)
+  #rm(athena_folder)  
+  
+  
+  #   #version of vocab
+  #   print(dplyr::filter(vocabulary,VOCABULARY_ID=='None'))
   
   
   
   
-  #
-  # crel        <-read.delim('inst/extdata/concept_relationship.csv',as.is=T,quote = "")
-  # relationship<-read.delim('inst/extdata/relationship.csv',as.is=T,quote = "")
-  # cancestor   <-read.delim('inst/extdata/concept_ancestor.csv',as.is=T,quote = "")
-  #vocabulary$VOCABULARY_ID
-#   library(dplyr)
-# 
-#   #version of vocab
-#   print(dplyr::filter(vocabulary,VOCABULARY_ID=='None'))
-# 
-# rm(athena_folder)
-# rm(crel)
-# rm(stats2)
-# rm(relationship)
-# rm(vocabulary)
-# rm(cancestor)
-# rm(tta)
-# rm(ttb)
-# rm(ttd)
-# rm(cid)
-# 
-# 
+  

@@ -6,3 +6,4 @@ docker-compose.yml
 errorReport.txt
 output/
 local
+opiods.csv
