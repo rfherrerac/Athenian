@@ -10,3 +10,9 @@ was to have AthenaR - or AthenER. - or belonging to Athens - which inhabitant of
 Download .csv files and put into a folder
 Run one time preparation code.
 Once needed, run code to run code to load vocabularies and use directly in code (or optionaly, use some functions around them predefined)
+
+# Functions
+
+## search_relationships
+
+Lists all related concept if you provide a cid (=concept_id)
