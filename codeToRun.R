@@ -18,6 +18,15 @@ writeLines('Vocab data all loaded.')
 print(Sys.time()-start)
 
 
+
+#' @export
+get_version <- function() {
+  dplyr::filter(vocabulary,vocabulary_id =='None')$vocabulary_version
+}
+
+
+
+
 #' Search by source code
 #'
 #' Search concept table for a code
@@ -33,11 +42,6 @@ search_code <- function(search_string,vocabulary=NULL) {
 }
 
 
-
-#' @export
-get_version <- function() {
-  dplyr::filter(vocabulary,vocabulary_id =='None')
-}
 
 
 #' @export
@@ -143,11 +147,21 @@ search_relationships <- function(concept_id,vocabulary=NULL,full_output=FALSE) {
 }
 
 
+#' list all concepts in a given class
 #' @export
 search_other <- function(vocabulary=NULL,class=NULL,full_output=FALSE) {
   out<-dplyr::filter(concept,concept_class_id %in% class)
   out <-out %>% mutate(concept_name=stringr::str_sub(concept_name,1,35))
   #if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
+  if (full_output) return(out) else return(select(out,concept_id,concept_name,vocabulary_id))
+}
+
+#' search by invalid reason field
+#' @export
+search_by_invalid_reason <- function(invalid_reason_value,vocabulary=NULL,class=NULL,full_output=FALSE) {
+  out<-dplyr::filter(concept,invalid_reason  %in% invalid_reason_value)
+  out <-out %>% mutate(concept_name=stringr::str_sub(concept_name,1,35))
+  if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
   if (full_output) return(out) else return(select(out,concept_id,concept_name,vocabulary_id))
 }
 
@@ -185,7 +199,9 @@ overview_vocab <- function() {
   out<-dplyr::arrange(out,desc(n))
   out
 }
- 
+
+
+#' See overview of classes 
 overview_class <- function() {
   out<-dplyr::count(concept,concept$concept_class_id)
   out<-dplyr::arrange(out,desc(n))

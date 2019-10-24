@@ -1,14 +1,54 @@
 #demostration of Athenian functions
 
+
 source('codeToRun.R')
 get_version()
 
+library(tidyverse)
+#print all rows for next two commands
+options(tibble.print_max = Inf)
+
+overview_class()
+overview_vocab()
 
 search_code('250.00')
 
 search_text('itag')
 
 search_text('itag',vocabulary='RxNorm') %>% View()
+search_by_invalid_reason(invalid_reason_value = 'D')
+
+#deprecated with no successor in LOINC and RxNorm
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('LOINC','RxNorm')) %>% View()
+
+#using full output
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('LOINC','RxNorm'),full_output = TRUE) %>% View()
+
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('NDC'),full_output = TRUE) %>% View()
+
+#deprecated with sucessor (upgraded)
+search_by_invalid_reason(invalid_reason_value = 'U',vocabulary = 'LOINC',full_output = TRUE) %>% View()
+
+
+
+#looking into deprecation by vocabulary_id by year
+# first prepare a new column with end year
+concept$valid_end_date %<>%  as.character
+concept$end_year=str_sub(concept$valid_end_date,1,4)
+aa<-search_by_invalid_reason(invalid_reason_value = 'U',full_output = TRUE) %>% count(vocabulary_id,end_year) 
+aa %>% write_csv('local/upgraded.csv')
+
+ab<-search_by_invalid_reason(invalid_reason_value = 'D',full_output = TRUE) %>% count(vocabulary_id,end_year) 
+aa %>% write_csv('local/deprecated.csv')
+
+#reused codes
+search_by_invalid_reason(invalid_reason_value = 'R') %>% View()
+#concept %>% group_by(invalid_reason) %>% count()
+
+
+  
+concept %>% as_tibble() %>% mutate(year=valid_end_date)
+mtcars %>% mutate(a=1)
 
 #extract which LOINC codes appear in mappings
 

@@ -1,6 +1,6 @@
 
 #athena_folder is expected to contain files parsed athena CSV files 
-athena_folder='n:/athena'
+athena_folder='o:/athena'
 
 library(tidyverse)
 library(magrittr)
@@ -36,6 +36,7 @@ library(magrittr)
   
   # a<-Sys.time()
   # save.image(file = file.path(athena_folder,'athena-small.rda'))
+  # save.image(file = file.path(athena_folder,'athena-medium.rda'))
   # print(Sys.time()-a)
   
   
