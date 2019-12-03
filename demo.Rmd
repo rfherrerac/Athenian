@@ -1,0 +1,307 @@
+---
+title: "Athenian Demo"
+author: "Vojtech Huser"
+date: "11/26/2019"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intro
+
+Various uses will be shown by chapter
+
+
+```{r load}
+source('codeToRun.R')
+library(DT);library(knitr)
+
+```
+
+# Simple calls of overview functions
+
+Of classes
+
+```{r simple}
+get_version()
+
+kable(overview_class())
+
+#dummy
+
+```
+
+# overview_vocab
+
+Overview of vocabularies
+
+```{r ov}
+
+kable(overview_vocab())
+
+```
+
+
+
+
+
+# included vocabularies
+
+```{r}
+kable(vocabulary)
+
+```
+
+
+# other
+
+```{r}
+#deprecated with no successor in LOINC and RxNorm
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('LOINC','RxNorm')) %>% head()
+
+
+cid=1710316
+search_concept_id(cid)
+
+search_relationships(cid,vocabulary = 'RxNorm',full_output = TRUE)  %>% datatable(rownames = FALSE)
+
+#dummy
+```
+# Maps to relationships use
+
+```{r maps}
+#
+#translate-dx.csv
+tset<-c('ICD10CM','ICD9CM','ICD10')
+#start<-concept %>% filter(vocabulary_id %in% tset)
+#only taking certain relationship
+mt<-concept_relationship %>% filter(relationship_id=='Maps to')
+
+#more info on the concept 1 (from)
+mt %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+names(mt)
+#restrict to our starting terminologies
+mt2<-mt %>% filter(vocabulary_id %in% tset)
+
+mt2 %<>% left_join(concept, by=c('concept_id_2'='concept_id'))
+names(mt2)
+
+#all relationships  are valid
+mt2 %>% count(invalid_reason.x)
+
+#export
+oname='local/translate_dx'
+mt2 %>% write_csv(paste0(oname,'-all.csv'))
+mt3<-mt2 %>% select(vocabulary_id=vocabulary_id.x,concept_code=concept_code.x,target_concept_id=concept_id_2) 
+mt3 %>% write_csv(paste0(oname,'.csv'))
+
+```
+
+
+# Is icd10 subsumed in icd10cm?
+
+Small analysis
+
+```{r inotcm}
+
+
+
+
+i10<-concept %>% filter(vocabulary_id=='ICD10' & invalid_reason=='')
+i10cm<-concept %>% filter(vocabulary_id=='ICD10CM'  & invalid_reason=='')
+#inner_join(i10$concept_code,i10cm$concept_code) 
+#length(intersect(i10$concept_code,i10cm$concept_code) )
+
+
+nrow(i10)
+inInotCM<-setdiff(i10$concept_code,i10cm$concept_code)
+nrow(i10cm)
+#that many concepts are in Int and not in US version ( ICD10CM)
+length(inInotCM)
+d<-i10 %>% filter(concept_code %in% inInotCM)
+d %>% datatable(rownames = FALSE)
+d %>% write_csv('local/inInotCM.csv')
+```
+
+ 
+```{r unmapped, eval=FALSE, include=FALSE}
+
+#Unmapped ICD10CM codes
+
+i10cm<-concept %>% filter(vocabulary_id=='ICD10CM')
+i10cm
+cid=1326507
+search_relationships(cid,full_output = TRUE) %>% View()
+mt<-concept_relationship %>% filter(relationship_id=='Maps to')
+
+mt %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+mt %<>% left_join(concept, by=c('concept_id_2'='concept_id'))
+names(mt)
+mt2<-mt %>% filter(vocabulary_id.x=='ICD10CM')
+imap <- mt %>% inner_join(select(i10cm,concept_id), by=c('concept_id_1'='concept_id'))
+nomap <- mt %>% anti_join(select(i10cm,concept_id), by=c('concept_id_1'='concept_id'))
+
+concept_relationship %>% filter(relationship_id=) inner_join(i10cm, by)
+
+```
+
+
+
+
+```{r old, eval=FALSE, include=FALSE}
+
+# Old vignette
+get_version()
+
+library(tidyverse)
+#print all rows for next two commands
+options(tibble.print_max = Inf)
+
+overview_class()
+overview_vocab()
+
+search_code('250.00')
+
+
+
+search_text('itag',vocabulary='RxNorm') 
+search_by_invalid_reason(invalid_reason_value = 'D') %>% head()
+
+#deprecated with no successor in LOINC and RxNorm
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('LOINC','RxNorm')) %>% head()
+
+#using full output
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('LOINC','RxNorm'),full_output = TRUE) %>% head()
+
+search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('NDC'),full_output = TRUE) %>% head()
+
+#deprecated with sucessor (upgraded)
+#search_by_invalid_reason(invalid_reason_value = 'U',vocabulary = 'LOINC',full_output = TRUE) %>% head()
+
+
+
+#looking into deprecation by vocabulary_id by year
+# first prepare a new column with end year
+concept$valid_end_date %<>%  as.character
+concept$end_year=str_sub(concept$valid_end_date,1,4)
+aa<-search_by_invalid_reason(invalid_reason_value = 'U',full_output = TRUE) %>% count(vocabulary_id,end_year) 
+kable(aa)
+aa %>% write_csv('local/upgraded.csv')
+
+ab<-search_by_invalid_reason(invalid_reason_value = 'D',full_output = TRUE) %>% count(vocabulary_id,end_year) 
+kable(ab)
+ab %>% write_csv('local/deprecated.csv')
+
+#reused codes
+reu<-search_by_invalid_reason(invalid_reason_value = 'R') 
+datatable(reu)
+#concept %>% group_by(invalid_reason) %>% count()
+
+
+  
+
+
+
+#extract which LOINC codes appear in mappings
+
+#we need to find all MapsTorelationship that have target terms LOINC codes
+
+#all realtionships
+names(concept_relationship)
+options(min.print = 100)
+options(tibble.print_max = 500)
+concept_relationship %>% count(relationship_id) 
+aa<-concept_relationship %>% 
+  filter(concept_id_1!=concept_id_2) %>% 
+  filter(relationship_id=='Maps to') %>%
+  left_join(concept,by=c('concept_id_2'='concept_id')) %>% 
+  left_join(concept,by=c('concept_id_1'='concept_id')) 
+  
+names(aa)
+ab<-aa %>% filter(vocabulary_id.y=='LOINC') 
+#lipid panel, let's see the relationships
+cid=2212095
+search_relationships(cid)
+#we see CPT4 - LOINC eq
+
+ac<-concept_relationship %>% 
+  #ignore replationships to self
+  filter(concept_id_1!=concept_id_2) %>% 
+  filter(relationship_id=='CPT4 - LOINC eq') %>%
+  #get explenations of codes
+  left_join(concept,by=c('concept_id_1'='concept_id')) %>% 
+  left_join(concept,by=c('concept_id_2'='concept_id')) %>% 
+  filter(standard_concept.y=='S' )
+ac %>% write_csv('CPT4-LOINCeq.csv')
+
+
+    
+
+
+# map NDCs to clinical drug (not branded drug)
+
+
+
+#filter all relationships of NDCs  
+cid=45077293
+search_relationships(cid)
+names(concept_relationship)
+rxnorm <- concept %>% filter(vocabulary_id=='RxNorm')
+# mt<-concept_relationship %>% filter(relationship_id=='Maps to')
+# mt %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+# mt %<>% left_join(concept, by=c('concept_id_2'='concept_id'))
+
+#map<-mt %>% inner_join(rxnorm %>% select(concept_id), by=c('concept_id_2'='concept_id'))
+#map %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+map <- mt %>% filter(vocabulary_id.x=='NDC' & concept_class_id.x=='11-digit NDC')
+map %>% write_rds('o:/athena/ndc-map-a.rds')
+
+#if branded drug, I must go further
+cid=40171779
+cid=1710316
+
+search_relationships(cid,vocabulary = 'RxNorm',full_output = TRUE) %>% head()
+
+#brand drug    #Tradename of   #clinical drug
+bcmap <- concept_relationship %>% filter(relationship_id=='Tradename of') %>% rename(cdcid=concept_id_2)
+
+names(mapp)
+mapp<-map %>% left_join(bcmap,by=c('concept_id_2'='concept_id_1')) %>% left_join(concept %>% select(concept_id,concept_name),by=c('cdcid'='concept_id'))
+names(mapp)
+mappp<-mapp %>% mutate(target_cid=if_else(is.na(cdcid),concept_id_2,cdcid))
+names(mappp)
+
+mappp %>% write_csv('o:/athena/ndc-map-b-ignore.csv')
+#mtcars %>%   mutate(new_col = if_else(mpg*cyl == 126.0, 2, 0)) %>%    head()
+mappp %>% select(concept_code=concept_code.x,target_cid) %>% write_rds('o:/athena/ndc-map-b.rds')
+
+
+
+#hieararchy for a concept
+
+
+cid=45077293
+
+cid<-search_code('02HV33Z')$concept_id #%>% unlist()
+cid
+
+#atc example
+cid<-search_code('J05AF09')$concept_id #%>% unlist()
+
+
+
+aa<-search_relationships(cid,full_output = TRUE) 
+names(aa)
+#View(aa)
+#View(aa %>% filter(standard_concept=='C'))
+
+#for icd10 pcs hieararchy the concepts are not marked C
+
+```
+
+

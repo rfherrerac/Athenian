@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/553935/d418e82885734e54aa8cfee4ff3eae5d
+bundleId: https://api.rpubs.com/api/v1/document/553935/d418e82885734e54aa8cfee4ff3eae5d
+url: http://rpubs.com/vojtech_huser/553935
+when: 1575404503.82235

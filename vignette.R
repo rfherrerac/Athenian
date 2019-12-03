@@ -86,3 +86,61 @@ ac %>% write_csv('CPT4-LOINCeq.csv')
     
 
 
+# map NDCs to clinical drug (not branded drug)
+
+
+
+#filter all relationships of NDCs  
+cid=45077293
+search_relationships(cid)
+names(concept_relationship)
+rxnorm <- concept %>% filter(vocabulary_id=='RxNorm')
+mt<-concept_relationship %>% filter(relationship_id=='Maps to')
+mt %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+mt %<>% left_join(concept, by=c('concept_id_2'='concept_id'))
+
+#map<-mt %>% inner_join(rxnorm %>% select(concept_id), by=c('concept_id_2'='concept_id'))
+#map %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+map <- mt %>% filter(vocabulary_id.x=='NDC' & concept_class_id.x=='11-digit NDC')
+map %>% write_rds('o:/athena/ndc-map-a.rds')
+
+#if branded drug, I must go further
+cid=40171779
+cid=1710316
+
+search_relationships(cid,vocabulary = 'RxNorm',full_output = TRUE) %>% View()
+
+#brand drug    #Tradename of   #clinical drug
+bcmap <- concept_relationship %>% filter(relationship_id=='Tradename of') %>% rename(cdcid=concept_id_2)
+
+names(mapp)
+mapp<-map %>% left_join(bcmap,by=c('concept_id_2'='concept_id_1')) %>% left_join(concept %>% select(concept_id,concept_name),by=c('cdcid'='concept_id'))
+names(mapp)
+mappp<-mapp %>% mutate(target_cid=if_else(is.na(cdcid),concept_id_2,cdcid))
+names(mappp)
+
+mappp %>% write_csv('o:/athena/ndc-map-b-ignore.csv')
+#mtcars %>%   mutate(new_col = if_else(mpg*cyl == 126.0, 2, 0)) %>%    head()
+mappp %>% select(concept_code=concept_code.x,target_cid) %>% write_rds('o:/athena/ndc-map-b.rds')
+
+
+
+#hieararchy for a concept
+
+
+cid=45077293
+
+cid<-search_code('02HV33Z')$concept_id #%>% unlist()
+cid
+
+#atc example
+cid<-search_code('J05AF09')$concept_id #%>% unlist()
+
+
+
+aa<-search_relationships(cid,full_output = TRUE) 
+names(aa)
+View(aa)
+View(aa %>% filter(standard_concept=='C'))
+
+#for icd10 pcs hieararchy the concepts are not marked C
