@@ -26,7 +26,7 @@ library(magrittr)
   
   
   a<-Sys.time()
-  save.image(file = file.path(athena_folder,'athena.rda'))
+  save.image(file = file.path(athena_folder,'athena-big.rda'))
   print(Sys.time()-a)
   
 #ignore code below------------
