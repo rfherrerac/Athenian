@@ -1,7 +1,7 @@
 ---
 title: "Athenian Demo"
 author: "Vojtech Huser"
-date: "11/26/2019"
+date: "12/04/2019"
 output: 
   html_document: 
     toc: yes
@@ -46,6 +46,41 @@ kable(overview_vocab())
 
 ```
 
+# overview_vocab and with concept status
+
+Overview of vocabularies with more data on concept status about each vocabulary (look for S and C mostly)
+
+```{r ov2}
+
+kable(overview_vocab_standard())
+
+```
+
+
+
+
+# overview of domains
+
+Overview of 
+
+```{r ov3}
+
+kable(overview_domain())
+
+```
+
+
+
+
+# overview of domains and vocabs
+
+Overview of 
+
+```{r ov4}
+
+kable(overview_domain_and_vocab())
+
+```
 
 
 
@@ -65,7 +100,7 @@ kable(vocabulary)
 search_by_invalid_reason(invalid_reason_value = 'D',vocabulary = c('LOINC','RxNorm')) %>% head()
 
 
-cid=1710316
+cid=1710316 #emtricitabine
 search_concept_id(cid)
 
 search_relationships(cid,vocabulary = 'RxNorm',full_output = TRUE)  %>% datatable(rownames = FALSE)
@@ -99,6 +134,86 @@ oname='local/translate_dx'
 mt2 %>% write_csv(paste0(oname,'-all.csv'))
 mt3<-mt2 %>% select(vocabulary_id=vocabulary_id.x,concept_code=concept_code.x,target_concept_id=concept_id_2) 
 mt3 %>% write_csv(paste0(oname,'.csv'))
+#end
+```
+
+# Mapping drugs to ingredients
+
+Clinical Drugs have ingredients. We want a simple file that will list those for all possible clinical drugs.
+
+```{r ingred}
+#list all clinical drugs
+#for international analysis, also do RxNorm extension
+cd<-concept %>% filter(vocabulary_id=='RxNorm') %>% filter(concept_class_id=='Clinical Drug')
+#names(concept)
+#cd %>% count(concept_class_id)
+nrow(cd)
+#only taking certain relationship
+
+#looking at what relationship_id to use
+ # cid=1710316 #emtricitabine
+ # search_concept_id(cid)
+ # 
+ # search_relationships(cid,vocabulary = 'RxNorm',full_output = TRUE)  %>% datatable(rownames = FALSE)
+
+#filter only those relationships
+mt<-concept_relationship %>% filter(relationship_id=='Consists of')
+
+#more info on the concept 1 (from)
+mt %<>% left_join(concept, by=c('concept_id_1'='concept_id'))
+names(mt)
+
+#restrict to clinical drug list created earlier (note the INNER join now)
+mt2<-mt %>% inner_join(cd,by=c('concept_id_1'='concept_id'))
+
+#get explanation on the ingredient
+mt2 %<>% left_join(concept, by=c('concept_id_2'='concept_id'))
+names(mt2)
+
+#all relationships  are valid
+mt2 %>% count(invalid_reason.x)
+
+#export
+oname='local/translate_rx_ingredient_component'
+mt2 %>% write_csv(paste0(oname,'-all.csv'))
+names(mt2)
+mt3<-mt2 %>% select(
+  #vocabulary_id=vocabulary_id.x,concept_code=concept_code.x,
+  concept_code=concept_id_1
+  ,target_concept_id=concept_id_2) 
+mt3 %>% write_csv(paste0(oname,'.csv'))
+
+#this only does it to Clinical Drug Comp (emtricitabine 200 mg!!) (not ingredient)
+
+
+#different approach
+
+ing<-concept %>% filter(vocabulary_id=='RxNorm') %>% filter(concept_class_id=='Ingredient')
+#names(concept)
+#ing %>% count(concept_class_id)
+nrow(ing)
+
+names(concept_ancestor)
+#restrict
+mt<-concept_ancestor %>% inner_join(cd,by=c('descendant_concept_id'='concept_id'))
+#restrict to ingredients as ancestors
+mt2<-mt %>% inner_join(ing,by=c('ancestor_concept_id'='concept_id'))
+
+#get explanation on the ingredient
+#mt2 %<>% left_join(concept, by=c('descendant_concept_id'='concept_id'))
+names(mt2)
+
+
+#export
+oname='local/translate_rx_ingredient'
+mt2 %>% write_csv(paste0(oname,'-all.csv'))
+names(mt2)
+mt3<-mt2 %>% select(
+  #vocabulary_id=vocabulary_id.x,concept_code=concept_code.x,
+  concept_code=ancestor_concept_id
+  ,target_concept_id=descendant_concept_id) 
+mt3 %>% write_csv(paste0(oname,'.csv'))
+
 
 ```
 
@@ -304,4 +419,49 @@ names(aa)
 
 ```
 
+
+
+# Concept ancestor
+
+```{r ca}
+cid=37395835 #familial prostate cancer
+#brief output
+get_ancestors(cid)  %>% datatable(rownames = FALSE)
+
+#full output (use full output parameter)
+```
+
+
+# Data on single vocabulary_id
+
+```{r vid}
+#vid=c('PPI')
+vid='RxNorm'
+vid='ICD10'
+vid='PPI'
+#selc<-concept %>% filter(vocabulary_id %in% vid)
+
+selc<-concept %>% filter(vocabulary_id==vid)
+
+#number of concepts
+nrow(selc)
+
+selc %>% count(concept_class_id) %>% arrange(desc(n))
+
+selc %>% count(domain_id) %>% arrange(desc(n))
+
+selcr<-concept_relationship %>% inner_join(selc, by=c('concept_id_1'='concept_id'))
+
+#number of relationships
+nrow(selcr)
+selcr %>% count(relationship_id)%>% arrange(desc(n))
+
+#what it maps to
+selcr %<>% left_join(concept,by=c('concept_id_2'='concept_id')) 
+#all rels
+selcr %>% count(relationship_id,vocabulary_id.y) %>% arrange(vocabulary_id.y,desc(n))
+
+#only  maps to rels
+selcr %>% filter(relationship_id=='Maps to') %>% count(vocabulary_id.y,domain_id.y) %>% arrange(desc(n))
+```
 

@@ -188,23 +188,71 @@ search_atc4 <- function(atc4='C07A') {
 }
 
 
-#' See overview of vocabularies
+#' See overview of vocabularies (only valid concepts are counted!)
 #'
 #'
 #' @return data frame 
 #' @export
 overview_vocab <- function() {
   
-  out<-dplyr::count(concept,vocabulary_id)
+  out<-dplyr::count(concept %>% filter(invalid_reason==''),vocabulary_id)
   out<-dplyr::arrange(out,desc(n))
   out
 }
 
 
-#' See overview of classes 
+#' See overview of vocabularies (only valid concepts are counted!)
+#'
+#'
+#' @return data frame 
+#' @export
+overview_vocab_standard <- function() {
+  
+  out<-dplyr::count(concept %>% filter(invalid_reason==''),vocabulary_id,standard_concept) %>% arrange(desc(standard_concept))
+  out %<>% spread(standard_concept,n)
+  out<-dplyr::arrange(out,desc(S))
+  out
+}
+
+
+#' See overview of classes (only valid concepts)
+#' @export
 overview_class <- function() {
-  out<-dplyr::count(concept,concept$concept_class_id)
+  out<-dplyr::count(concept %>% filter(invalid_reason==''),concept_class_id)
   out<-dplyr::arrange(out,desc(n))
   out
 } 
+
+#' overview by domain 
+#' @export
+#' 
+overview_domain <- function() {
+  out<-dplyr::count(concept %>% filter(invalid_reason==''),domain_id)
+  out<-dplyr::arrange(out,desc(n))
+  out
+} 
+
+
+#' See overview of domains and vocabularies  (only valid concepts)
+#' @export
+overview_domain_and_vocab <- function() {
+  out<-dplyr::count(concept %>% filter(invalid_reason==''),domain_id,vocabulary_id)
+  out<-dplyr::arrange(out,domain_id,desc(n))
+  out
+} 
+
+
+
+#' get ancestors
+#' @param cid concept id (or a vector of them)
+#' @return data frame with the ancestors
+#' @export
+get_ancestors <- function(cid,vocabulary=NULL,full_output=FALSE) {
+  out<-dplyr::filter(concept_ancestor, descendant_concept_id %in% cid) %>% dplyr::filter(min_levels_of_separation >0)
+  out %<>% left_join(concept,by=c('ancestor_concept_id'='concept_id')) %>% arrange(descendant_concept_id,vocabulary_id,min_levels_of_separation,max_levels_of_separation)
+  #out <-out %>% mutate(concept_name=stringr::str_sub(concept_name,1,35))
+  if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
+  #names(out)
+  if (full_output) return(out) else return(out %>% select(ancestor_concept_id,concept_name,vocabulary_id,min_levels_of_separation,max_levels_of_separation)%>% mutate(concept_name=stringr::str_sub(concept_name,1,35)))
+}
 

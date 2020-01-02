@@ -1,0 +1,77 @@
+---
+title: "Vocabulary Report"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: true
+params:
+  vid: PPI
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+vid=params$vid
+source('codeToRun.R')
+library(DT);library(knitr)
+options(DT.options = list(pageLength = 25))
+```
+
+
+# `r vid`
+
+Report 
+
+```{r p1}
+print(vid)
+
+selc<-concept %>% filter(vocabulary_id==vid)
+
+#number of concepts
+nrow(selc)
+
+selc %>% count(concept_class_id) %>% arrange(desc(n)) %>% datatable(rownames = FALSE)
+
+selc %>% count(domain_id) %>% arrange(desc(n)) %>% datatable(rownames = FALSE)
+
+
+
+```
+
+# Status
+
+```{r}
+selc %>% count(standard_concept)
+
+selc %>% count(invalid_reason)
+
+```
+
+
+
+# Relationships
+
+
+```{r p2}
+selcr<-concept_relationship %>% inner_join(selc, by=c('concept_id_1'='concept_id'))
+#number of relationships
+nrow(selcr)
+selcr %>% count(relationship_id)%>% arrange(desc(n)) %>% datatable(rownames = FALSE)
+
+#what it maps to
+selcr %<>% left_join(concept,by=c('concept_id_2'='concept_id')) 
+#all rels
+selcr %>% count(relationship_id,vocabulary_id.y) %>% arrange(vocabulary_id.y,desc(n)) %>% datatable(rownames = FALSE)
+
+#only  maps to rels
+selcr %>% filter(relationship_id=='Maps to') %>% count(vocabulary_id.y,domain_id.y) %>% arrange(desc(n)) %>% datatable(rownames = FALSE)
+```
+
+# Concepts codes sample
+
+```{r}
+selc %>% select(concept_id,concept_code,concept_class_id,domain_id) %>% sample_n(200) %>% datatable(rownames = FALSE)
+
+
+```
+
