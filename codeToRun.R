@@ -6,6 +6,7 @@
 
 library(tidyverse)
 library(magrittr)
+#options(tibble.print_max = 200, tibble.print_min = 100)
 
 #folder is expected to contain files parsed athena CSV files 
 athena_folder='n:/athena'
@@ -44,32 +45,6 @@ search_code <- function(search_string,vocabulary=NULL) {
 
 
 
-#' @export
-search_concept_id <- function(concept_id,vocabulary=NULL,full_output=FALSE) {
-  out<-dplyr::filter(concept, concept_id %in% concept_id)
-  out <-out %>% mutate(concept_name=stringr::str_sub(concept_name,1,35))
-  if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
-  return(select(out,concept_id,concept_name,vocabulary_id))
-}
-
-
-#' Search by string
-#'
-#' Search concept table
-#'
-
-#' @return data frame with the matches
-#' @export
-search_text <- function(search_string) {
-  dplyr::filter(concept, stringr::str_detect(concept_name, search_string))
-}
-
-
-#' @export
-search_relationships <- function(concept_id) {
-  dplyr::left_join(dplyr::filter(concept_relationship, concept_id_1==concept_id),concept, by=c('concept_id_2'='concept_id'))
-}
-
 
 
 
@@ -92,23 +67,8 @@ search_relationships <- function(concept_id) {
 
 
 
-#' Search by source code
-#'
-#' Search concept table for a code
-#'
-#' @param search_string
+#' Search by concept id
 #' @return data frame with the matches
-#' @export
-search_code <- function(search_string) {
-  dplyr::filter(concept, concept_code ==search_string)
-}
-
-#' @export
-get_version <- function() {
-  dplyr::filter(vocabulary,vocabulary_id =='None')
-}
-
-
 #' @export
 search_concept_id <- function(cid,vocabulary=NULL,full_output=FALSE) {
   out<-dplyr::filter(concept, concept_id %in% cid)
@@ -116,6 +76,8 @@ search_concept_id <- function(cid,vocabulary=NULL,full_output=FALSE) {
   if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
   if (full_output) return(out) else return(select(out,concept_id,concept_name,vocabulary_id))
 }
+
+
 
 
 #vocabulary=NULL,full_output=FALSE
@@ -128,7 +90,6 @@ search_concept_id <- function(cid,vocabulary=NULL,full_output=FALSE) {
 #'
 #' Search concept table
 #'
-
 #' @return data frame with the matches
 #' @export
 search_text <- function(search_string,vocabulary=NULL) {
@@ -255,4 +216,80 @@ get_ancestors <- function(cid,vocabulary=NULL,full_output=FALSE) {
   #names(out)
   if (full_output) return(out) else return(out %>% select(ancestor_concept_id,concept_name,vocabulary_id,min_levels_of_separation,max_levels_of_separation)%>% mutate(concept_name=stringr::str_sub(concept_name,1,35)))
 }
+
+#' get descendants
+#' @param cid concept id (or a vector of them)
+#' @return data frame with the descendants
+#' @export
+get_descendants <- function(cid,vocabulary=NULL,full_output=FALSE) {
+  out<-dplyr::filter(concept_ancestor, ancestor_concept_id %in% cid) %>% dplyr::filter(min_levels_of_separation >0)
+  #arrange may be wrong, todo later
+  out %<>% left_join(concept,by=c('descendant_concept_id'='concept_id')) %>% arrange(ancestor_concept_id,vocabulary_id,min_levels_of_separation,max_levels_of_separation)
+  #out <-out %>% mutate(concept_name=stringr::str_sub(concept_name,1,35))
+  if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
+  #names(out)
+  if (full_output) return(out) else return(out %>% select(descendant_concept_id,concept_name,vocabulary_id,min_levels_of_separation,max_levels_of_separation)%>% mutate(concept_name=stringr::str_sub(concept_name,1,35)))
+}
+
+
+
+
+#' get descendants and after that included source concepts
+#' @param cid concept id (or a vector of them)
+#' @return data frame with the descendants
+#' @export
+get_source_concepts <- function(cid,vocabulary=NULL,full_output=FALSE) {
+  out<-dplyr::filter(concept_ancestor, ancestor_concept_id %in% cid) 
+  # keep self in the data %>% dplyr::filter(min_levels_of_separation >0)
+  
+  #out %<>% left_join(concept,by=c('descendant_concept_id'='concept_id')) %>% arrange(descendant_concept_id,vocabulary_id,min_levels_of_separation,max_levels_of_separation)
+  
+  out<-out %>% inner_join(filter(concept_relationship,relationship_id=='Mapped from'), by=c('descendant_concept_id'='concept_id_1'))
+  #names(out2)
+  
+  out %<>% left_join(concept,by=c('concept_id_2'='concept_id'))
+  #%>% arrange(descendant_concept_id,vocabulary_id,min_levels_of_separation,max_levels_of_separation)
+  
+  #out <-out %>% mutate(concept_name=stringr::str_sub(concept_name,1,35))
+  if (!is.null(vocabulary)) out <-out %>% filter(vocabulary_id %in% vocabulary)
+  #names(out)
+  if (full_output) return(out) else  return(out %>% select(concept_id_2,concept_name,concept_code,vocabulary_id) %>% mutate(concept_name=stringr::str_sub(concept_name,1,35)))
+}
+
+
+#' Return a list of concepts from core terminologies
+#' @param dotRemove boolean flag to run on if dot in concept codes should be removed
+#' @return data frame with concepts
+#' @export
+get_core_terminologies <- function(dotRemove=FALSE){
+  lkup2<-concept %>% filter(vocabulary_id %in% c('ICD9Proc','HCPCS','ICD9CM','ICD10CM','ICD10PCS'))
+  if (dotRemove) lkup2  %<>% mutate(concept_code=str_replace(concept_code,'\\.',''))
+  
+  #lkup2 %>% write_csv('lkupALL.csv')
+  #lkup2 %>% group_by(vocabulary_id)  %>% sample_n(10) %>% write_csv('lkupALL-preview.csv')
+  lkup2
+}
+
+#' Table with drugs (descendant) linked to ingredients (ancestor)
+#' @return data frame with relevant relationships
+#' @export
+get_ingredient_drug_table<-function(){
+  
+  rxn_ing<- concept %>% filter(vocabulary_id %in%  c('RxNorm','RxNorm Extension')) %>%
+    filter(concept_class_id=='Ingredient') %>% 
+    filter(invalid_reason=='')
+  #names(concept_ancestor )
+  
+  result<-concept_ancestor %>% inner_join(rxn_ing,by=c('ancestor_concept_id'='concept_id')) %>% 
+    left_join(concept,by=c('descendant_concept_id'='concept_id'))
+  nrow(result)
+  result
+  # cid=1332419
+  # cid=35606583
+  # result %>% filter(descendant_concept_id==cid)
+  #names(result)
+  #result %>% count(vocabulary_id.y)
+                               
+}
+
 

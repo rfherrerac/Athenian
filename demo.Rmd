@@ -181,7 +181,7 @@ mt3<-mt2 %>% select(
   #vocabulary_id=vocabulary_id.x,concept_code=concept_code.x,
   concept_code=concept_id_1
   ,target_concept_id=concept_id_2) 
-mt3 %>% write_csv(paste0(oname,'.csv'))
+#mt3 %>% write_csv(paste0(oname,'.csv'))
 
 #this only does it to Clinical Drug Comp (emtricitabine 200 mg!!) (not ingredient)
 
@@ -214,6 +214,7 @@ mt3<-mt2 %>% select(
   ,target_concept_id=descendant_concept_id) 
 mt3 %>% write_csv(paste0(oname,'.csv'))
 
+#2020-04-28 same later implemented as function in athenian
 
 ```
 
@@ -463,5 +464,26 @@ selcr %>% count(relationship_id,vocabulary_id.y) %>% arrange(vocabulary_id.y,des
 
 #only  maps to rels
 selcr %>% filter(relationship_id=='Maps to') %>% count(vocabulary_id.y,domain_id.y) %>% arrange(desc(n))
+```
+
+
+# Source concepts 
+
+Retrieve source concepts.
+```{r}
+cid=197494 # hep c
+sc<-get_source_concepts(cid,vocabulary = c('ICD10CM','ICD9CM'))
+sc %>% datatable(rownames = FALSE)
+```
+
+
+
+# Get Descendants 
+
+Retrieve descendant concepts.
+```{r}
+cid=198964 #chronic hep c
+dc<-get_descendants(cid)
+dc %>% datatable(rownames = FALSE)
 ```
 

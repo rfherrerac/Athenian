@@ -1,6 +1,6 @@
 
 #athena_folder is expected to contain files parsed athena CSV files 
-athena_folder='o:/athena'
+athena_folder='n:/athena'
 
 library(tidyverse)
 library(magrittr)
@@ -26,16 +26,17 @@ library(magrittr)
   
   
   a<-Sys.time()
-  save.image(file = file.path(athena_folder,'athena-big.rda'))
+  save.image(file = file.path(athena_folder,'athena.rda'))
   print(Sys.time()-a)
   
 #ignore code below------------
 #make a smaller file without some vocab tables  
 
-  #rm(concept_ancestor)
+  #rm(concept_ancestor) 
+  rm(relationship);rm(vocabulary);rm(concept_ancestor);rm(concept_relationship)
   
   # a<-Sys.time()
-  # save.image(file = file.path(athena_folder,'athena-small.rda'))
+  # save.image(file = file.path(athena_folder,'concept.rda'))
   # save.image(file = file.path(athena_folder,'athena-medium.rda'))
   # print(Sys.time()-a)
   
